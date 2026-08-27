@@ -18,10 +18,28 @@ export function normalizeServerUrl(rawUrl: string): string {
   return `${trimmed}/arcgis/rest/services`
 }
 
+const ARCGIS_PROXY_PREFIX = '/_arcgis/'
+
+/**
+ * В dev-режиме перенаправляет запрос к ArcGIS Server через прокси dev-сервера.
+ * Это делает запрос same-origin и избавляет от ошибок CORS и referrer-policy
+ * (например, strict-origin-when-cross-origin) при работе с локальным сервером.
+ */
+export function toArcGISRequestUrl(url: string): string {
+  if (!import.meta.env.DEV) return url
+  try {
+    const parsed = new URL(url)
+    const rest = url.slice(parsed.origin.length)
+    return `${ARCGIS_PROXY_PREFIX}${encodeURIComponent(parsed.origin)}${rest}`
+  } catch {
+    return url
+  }
+}
+
 async function fetchJson<T>(url: string, token?: string): Promise<T> {
   const params = new URLSearchParams({ f: 'pjson' })
   if (token) params.set('token', token)
-  const response = await fetch(`${url}?${params.toString()}`)
+  const response = await fetch(toArcGISRequestUrl(`${url}?${params.toString()}`))
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}: ${response.statusText}`)
   }

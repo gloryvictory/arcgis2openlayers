@@ -134,6 +134,7 @@ export const useArcgisStore = create<ArcgisState>((set, get) => ({
       service: selectedService,
       layer,
       sourceType,
+      extent: serviceDetails?.fullExtent,
     }
     set({ activeLayers: [...activeLayers, active] })
   },

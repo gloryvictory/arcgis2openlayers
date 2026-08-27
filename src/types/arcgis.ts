@@ -81,6 +81,8 @@ export interface ActiveLayer {
   service: ArcgisService
   layer: ArcgisLayer
   sourceType: SourceType
+  /** Экстент сервиса, к которому приближать карту при добавлении слоя */
+  extent?: ArcgisExtent
 }
 
 /** Описание базовой карты */

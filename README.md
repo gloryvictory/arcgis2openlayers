@@ -81,7 +81,7 @@ npm run preview      # Предпросмотр продакшен-сборки
 
 ## Использование
 
-1. Введите URL ArcGIS Server (например, `https://host/arcgis/rest/services`) в поле «Подключение к ArcGIS Server».
+1. Введите URL ArcGIS Server (например, `http://host` или `https://host/arcgis/rest/services`) в поле «Подключение к ArcGIS Server».
 2. Нажмите «Подключиться» — приложение загрузит каталог сервисов.
 3. Выберите сервис, затем слой.
 4. Нажмите «Добавить», чтобы отобразить слой на карте.

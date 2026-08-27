@@ -10,10 +10,10 @@ import XYZ from 'ol/source/XYZ'
 import ImageArcGISRest from 'ol/source/ImageArcGISRest'
 import VectorSource from 'ol/source/Vector'
 import GeoJSON from 'ol/format/GeoJSON'
-import { fromLonLat } from 'ol/proj'
+import { fromLonLat, transformExtent } from 'ol/proj'
 import { defaults as defaultControls } from 'ol/control/defaults'
-import type { ActiveLayer, BasemapId } from '../types/arcgis'
-import { normalizeServerUrl } from '../services/arcgisApi'
+import type { ActiveLayer, ArcgisExtent, BasemapId } from '../types/arcgis'
+import { normalizeServerUrl, toArcGISRequestUrl } from '../services/arcgisApi'
 
 function createBasemapLayer(basemap: BasemapId): BaseLayer {
   if (basemap === 'esri-imagery') {
@@ -32,7 +32,7 @@ function createBasemapLayer(basemap: BasemapId): BaseLayer {
 
 function createArcgisLayer(active: ActiveLayer, serverUrl: string, token?: string): BaseLayer {
   const base = normalizeServerUrl(serverUrl)
-  const serviceUrl = `${base}/${active.service.path}`
+  const serviceUrl = toArcGISRequestUrl(`${base}/${active.service.path}`)
 
   switch (active.sourceType) {
     case 'tile': {
@@ -75,6 +75,22 @@ function createArcgisLayer(active: ActiveLayer, serverUrl: string, token?: strin
       })
     }
   }
+}
+
+/** Преобразует экстент сервиса ArcGIS в экстент проекции карты (EPSG:3857) */
+function toMapExtent(extent: ArcgisExtent | undefined): number[] | null {
+  if (!extent) return null
+  const wkid = extent.spatialReference?.latestWkid ?? extent.spatialReference?.wkid
+  if (wkid == null) return null
+
+  const raw = [extent.xmin, extent.ymin, extent.xmax, extent.ymax]
+  if (wkid === 4326 || wkid === 4269) {
+    return transformExtent(raw, 'EPSG:4326', 'EPSG:3857')
+  }
+  if (wkid === 3857 || wkid === 102100 || wkid === 102113 || wkid === 900913) {
+    return raw
+  }
+  return null
 }
 
 export function useMap(
@@ -121,12 +137,19 @@ export function useMap(
 
     const desired = new Set(activeLayers.map((al) => al.id))
 
-    map.getLayers().forEach((layer) => {
-      const id = layer.get('arcgisId') as string | undefined
-      if (id && !desired.has(id)) {
-        map.removeLayer(layer)
-      }
-    })
+    const toRemove = map
+      .getLayers()
+      .getArray()
+      .filter((layer) => {
+        const id = layer.get('arcgisId') as string | undefined
+        return id != null && !desired.has(id)
+      })
+
+    for (const layer of toRemove) {
+      map.removeLayer(layer)
+    }
+
+    let fitExtent: number[] | null = null
 
     for (const active of activeLayers) {
       const exists = map
@@ -137,6 +160,11 @@ export function useMap(
       const olLayer = createArcgisLayer(active, serverUrl, token)
       olLayer.set('arcgisId', active.id)
       map.addLayer(olLayer)
+      fitExtent = toMapExtent(active.extent)
+    }
+
+    if (fitExtent) {
+      map.getView().fit(fitExtent, { duration: 250, padding: [40, 40, 40, 40] })
     }
   }, [activeLayers, serverUrl, token, ready])
 }
