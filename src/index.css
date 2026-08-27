@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+/* Стили контролов OpenLayers для тёмной темы */
+.dark .ol-control button {
+  background-color: rgb(30 41 59 / 0.85);
+  color: #e2e8f0;
+}
+
+.dark .ol-control button:hover {
+  background-color: rgb(51 65 85 / 0.95);
+}
+
+.dark .ol-attribution {
+  background-color: rgb(30 41 59 / 0.75);
+  color: #cbd5e1;
+}
+
+.dark .ol-attribution a {
+  color: #93c5fd;
+}
